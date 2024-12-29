@@ -31,14 +31,15 @@ const Event = () => {
   const [isRegisteredInRelatedEvents, setIsRegisteredInRelatedEvents] =
     useState(false);
   const [eventName, setEventName] = useState("");
+  const [parentEventCount, setParentEventCount] = useState([]);
 
   useEffect(() => {
-    if (recoveryCtx.teamCode && recoveryCtx.teamName) {
+    if (recoveryCtx.teamCode && recoveryCtx.teamName || recoveryCtx.successMessage) {
       if (!isOpen) {
         setOpenModal(true);
       }
     }
-  }, [recoveryCtx.teamCode]);
+  }, [recoveryCtx.teamCode, recoveryCtx.successMessage]);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -105,10 +106,11 @@ const Event = () => {
   }, []);
 
   const handleShare = () => {
-    if (recoveryCtx.teamCode && recoveryCtx.teamName) {
-      const { setTeamCode, setTeamName } = recoveryCtx;
+    if (recoveryCtx.teamCode && recoveryCtx.teamName || recoveryCtx.successMessage) { //if error comes put recoveryCtx.successMessage in or and setSuccessMessage(null)
+      const { setTeamCode, setTeamName, setSuccessMessage } = recoveryCtx;
       setTeamCode(null);
-      setTeamName(null);
+      setTeamName(null); //have to check later on 
+      setSuccessMessage(null);
       setOpenModal(false);
     }
   };
@@ -131,6 +133,13 @@ const Event = () => {
 
   useEffect(() => {
     const registeredEventIds = authCtx.user.regForm || [];
+
+    const parentEvents = registeredEventIds
+      .map((id) => events.find((event) => event.id === id)) // Map IDs to event objects
+      .filter((event) => event?.info?.relatedEvent == null || event.info.relatedEvent === "null");
+
+    setParentEventCount(parentEvents.length);
+    // console.log(parentEventCount);
 
     const relatedEventIds = ongoingEvents
       .map((event) => event.info.relatedEvent)
@@ -166,7 +175,12 @@ const Event = () => {
     teamCode: recoveryCtx.teamCode,
     teamName: recoveryCtx.teamName,
   };
-  console.log(teamCodeAndName);
+  // console.log(teamCodeAndName);
+
+  const successMessage = {
+    successMessage: recoveryCtx.successMessage
+  };
+  // console.log(successMessage);
 
   // Slice the pastEvents array to show only the first 4 events
   const displayedPastEvents = pastEvents.slice(0, 4);
@@ -174,7 +188,7 @@ const Event = () => {
     <>
       <ChatBot />
       {isOpen && (
-        <ShareTeamData onClose={handleShare} teamData={teamCodeAndName} />
+        <ShareTeamData onClose={handleShare} teamData={teamCodeAndName} successMessage={successMessage} />
       )}
       <div className={style.main}>
         <div style={{ display: "flex" }}>
@@ -222,7 +236,7 @@ const Event = () => {
                       ) : (
                         <div> </div>
                       )}
-                      {!isRegisteredInRelatedEvents &&
+                      {!isRegisteredInRelatedEvents && parentEventCount==0 &&
                         authCtx.isLoggedIn &&
                         authCtx.user.access === "USER" && (
                           <div className={style.notify}>

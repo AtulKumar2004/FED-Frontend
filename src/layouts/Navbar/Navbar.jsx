@@ -14,7 +14,7 @@ const Navbar = () => {
   const [activeLink, setActiveLink] = useState("/");
   const lastScrollY = useRef(0);
   const authCtx = useContext(AuthContext);
-  const location = useLocation(); // Hook to get the current location
+  const location = useLocation();
   const navigate = useNavigate();
   const [navbarBg, setNavbarBg] = useState(false);
 
@@ -47,41 +47,47 @@ const Navbar = () => {
   }, [isMobile]);
 
   useEffect(() => {
-    setActiveLink(location.pathname); // Update active link based on current location
+    let currentPath = location.pathname;
+    if (/\/gsoc|\/GSOC|\/GSoC|\/gsoc/i.test(currentPath)) {
+      currentPath = "/Gsoc"; // Normalize Gsoc path
+    }
+    setActiveLink(currentPath);
   }, [location]);
 
   const toggleMobileMenu = () => {
     setIsMobile(!isMobile);
-    setNavbarHeight(!isMobile ? "500vw" : "80px");
+    setNavbarHeight(!isMobile ? "500vw" : "90px");
   };
 
   const closeMobileMenu = () => {
     setIsMobile(false);
-    setNavbarHeight("80px");
+    setNavbarHeight("90px");
   };
 
   const handleLogout = () => {
     authCtx.logout();
-    navigate("/")
+    navigate("/");
     closeMobileMenu();
   };
 
-  window.addEventListener("scroll", () => {
-    const navbarElements = document.getElementsByClassName(styles.navbar);
-    
-    if (window.scrollY > 0) {
-      for (let i = 0; i < navbarElements.length; i++) {
-        navbarElements[i].style.backdropFilter = "blur(20px)";
-      }
-    } else {
-      for (let i = 0; i < navbarElements.length; i++) {
-        navbarElements[i].style.backdropFilter = "none";
-      }
-    }
-  });
-  
+  useEffect(() => {
+    const handleNavbarBlur = () => {
+      const navbarElements = document.getElementsByClassName(styles.navbar);
+      const blurValue = window.scrollY > 0 ? "blur(20px)" : "none";
+      Array.from(navbarElements).forEach(
+        (element) => (element.style.backdropFilter = blurValue)
+      );
+    };
+
+    window.addEventListener("scroll", handleNavbarBlur);
+    return () => {
+      window.removeEventListener("scroll", handleNavbarBlur);
+    };
+  }, []);
+
   const isOmegaActive = activeLink === "/Omega";
-  const isGsocActive = activeLink === "/Gsoc"; 
+  const isGsocActive = activeLink === "/Gsoc";
+
   return (
     <nav
       className={`${styles.navbar} ${
@@ -147,9 +153,7 @@ const Navbar = () => {
                 to="/"
                 className={`${styles.link} ${
                   activeLink === "/" ? styles.activeLink : ""
-                } ${activeLink === "/Omega" ? styles.omegaHover : ""} ${
-                  activeLink === "/Gsoc" ? styles.GsocHover : ""
-                }`}
+                } ${activeLink === "/Gsoc" ? styles.gsocHover : ""}`}
                 onClick={closeMobileMenu}
               >
                 Home
@@ -160,36 +164,21 @@ const Navbar = () => {
                 to="/Events"
                 className={`${styles.link} ${
                   activeLink === "/Events" ? styles.activeLink : ""
-                } ${activeLink === "/Omega" ? styles.omegaHover : ""}
-                ${
-                  activeLink === "/Gsoc" ? styles.GsocHover : ""}`}
+                } ${activeLink === "/Gsoc" ? styles.gsocHover : ""}`}
                 onClick={closeMobileMenu}
               >
                 Event
               </NavLink>
             </li>
-            {/* <li>
-              <NavLink
-                to="/Omega"
-                className={`${styles.link} ${
-                  activeLink === "/Omega" ? styles.activeLinkOmega : ""
-                } ${activeLink === "/Omega" ? styles.omegaHover : ""}`}
-                onClick={closeMobileMenu}
-              >
-                Omega
-              </NavLink>
-            </li>  */}
             <li>
               <NavLink
                 to="/Gsoc"
                 className={`${styles.linkGsoc} ${
                   activeLink === "/Gsoc" ? styles.activeLinkGsoc : ""
-                } ${activeLink === "/Gsoc" ? styles.GsocHover : ""}
-                ${
-                  activeLink === "/Gsoc" ? styles.GsocHover : ""}`}
+                } ${activeLink === "/Gsoc" ? styles.gsocHover : ""}`}
                 onClick={closeMobileMenu}
               >
-                GSOC
+                GSoC
               </NavLink>
             </li>
             <li>
@@ -197,9 +186,7 @@ const Navbar = () => {
                 to="/Social"
                 className={`${styles.link} ${
                   activeLink === "/Social" ? styles.activeLink : ""
-                } ${activeLink === "/Omega" ? styles.omegaHover : ""}
-                ${
-                  activeLink === "/Gsoc" ? styles.GsocHover : ""}`}
+                } ${activeLink === "/Gsoc" ? styles.gsocHover : ""}`}
                 onClick={closeMobileMenu}
               >
                 Social
@@ -210,9 +197,7 @@ const Navbar = () => {
                 to="/Team"
                 className={`${styles.link} ${
                   activeLink === "/Team" ? styles.activeLink : ""
-                } ${activeLink === "/Omega" ? styles.omegaHover : ""}
-                ${
-                  activeLink === "/Gsoc" ? styles.GsocHover : ""}`}
+                } ${activeLink === "/Gsoc" ? styles.gsocHover : ""}`}
                 onClick={closeMobileMenu}
               >
                 Team
@@ -266,10 +251,8 @@ const Navbar = () => {
             <NavLink to="/Login" onClick={closeMobileMenu}>
               <button
                 className={`${styles.authButton} ${
-                  isOmegaActive ? styles.omegaButton : ""
-                }
-                ${
-                  activeLink === "/Gsoc" ? styles.GsocHover : ""}`}
+                  activeLink === "/Gsoc" ? styles.GsocButton : ""
+                }`}
               >
                 Login
               </button>
